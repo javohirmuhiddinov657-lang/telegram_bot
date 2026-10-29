@@ -4,18 +4,14 @@ from telebot import types
 TOKEN = '8907733379:AAEpMU0cmDvPyysdC5vWBJD8_TYOhaGROWk'
 bot = telebot.TeleBot(TOKEN)
 
-# Majburiy obuna kanallari
-CHANNELS = ['@muxiddinov_uz', '@ziyadullayevv_uz']
+CHANNELS = [-1003926387191, -1004313353926, -1004475706028] 
 
-# Yopiq kanalning ID raqami (boshiga -100 qo'shiladi)
 PRIVATE_CHANNEL_ID = -1004380860700
 
-# Multfilm qismlari (yopiq kanaldagi post raqamlari)
 MOVIES = {
-    "6": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    "6": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] 
 }
 
-# Obunani tekshiruvchi funksiya
 def check_all_subscriptions(user_id):
     for channel in CHANNELS:
         try:
@@ -26,66 +22,91 @@ def check_all_subscriptions(user_id):
             return False
     return True
 
-# /start buyrug'i
+def get_main_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    btn1 = types.KeyboardButton("🔍 Kino kodlarini qidirish")
+    btn2 = types.KeyboardButton("💎 Premium")
+    btn3 = types.KeyboardButton("🎲 Tasodifiy kino")
+    btn4 = types.KeyboardButton("🏆 Top kinolar")
+    btn5 = types.KeyboardButton("👤 Profil")
+    markup.add(btn1)
+    markup.add(btn2, btn3)
+    markup.add(btn4, btn5)
+    return markup
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id = message.from_user.id
+    name = message.from_user.first_name
     
     if not check_all_subscriptions(user_id):
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        btn1 = types.InlineKeyboardButton("📢 1-kanalga obuna bo'lish", url="https://t.me/muxiddinov_uz")
-        btn2 = types.InlineKeyboardButton("📢 2-kanalga obuna bo'lish", url="https://t.me/ziyadullayevv_uz")
-        btn_check = types.InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub")
-        markup.add(btn1, btn2, btn_check)
+        markup_inline = types.InlineKeyboardMarkup(row_width=1)
+        btn1 = types.InlineKeyboardButton("🔒 1-guruhga qo'shilish", url="https://t.me/+VM_10wTxdmliZThi")
+        btn2 = types.InlineKeyboardButton("🔒 2-guruhga qo'shilish", url="https://t.me/+9_glQwmckQ1lMjky")
+        btn3 = types.InlineKeyboardButton("🔒 3-guruhga qo'shilish", url="https://t.me/+eHxXoF8wo3xjOTUy")
+        btn_check = types.InlineKeyboardButton("🔄 Obunani tekshirish", callback_data="check_sub")
+        markup_inline.add(btn1, btn2, btn3, btn_check)
         
         bot.send_message(
             message.chat.id,
-            "Botdan foydalanish uchun quyidagi **ikkala kanalga** ham obuna bo'ling:\n\n1. @muxiddinov_uz\n2. @ziyadullayevv_uz\n\nObuna bo'lgach, **'Tekshirish'** tugmasini bosing:",
-            reply_markup=markup,
+            "⚠️ **Botdan foydalanish uchun quyidagi 3 ta guruhga ham obuna bo'lish so'rovini yuboring:**\n\n"
+            "So'rov yuborganingizdan keyin **'Obunani tekshirish'** tugmasini bosing:",
+            reply_markup=markup_inline,
             parse_mode="Markdown"
         )
     else:
-        name = message.from_user.first_name
         bot.send_message(
             message.chat.id,
-            f"Tabriklayman, {name}! Kino kodini yuboring."
+            f"Tabriklayman, {name}! Botdan foydalanishingiz mumkin, kino kodini yuboring.",
+            reply_markup=get_main_menu()
         )
 
-# "Tekshirish" tugmasi
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
 def callback_inline(call):
     user_id = call.from_user.id
+    name = call.from_user.first_name
+    
     if check_all_subscriptions(user_id):
         bot.answer_callback_query(call.id, "Rahmat, obuna tasdiqlandi! ✅")
-        name = call.from_user.first_name
         bot.send_message(
             call.message.chat.id,
-            f"Tabriklayman, {name}! Kino kodini yuboring. Multfilmni ko'rish uchun **6** raqamini yuboring:"
+            f"Tabriklayman, {name}! Botdan foydalanishingiz mumkin, kino kodini yuboring.",
+            reply_markup=get_main_menu()
         )
     else:
-        bot.answer_callback_query(call.id, "Siz hali hamma kanallarga obuna bo'lmadingiz! ❌", show_alert=True)
+        bot.answer_callback_query(call.id, "Siz hali hamma guruhlarga so'rov yubormadingiz yoki admin tasdiqlamadi! ❌", show_alert=True)
 
-# Raqam yuborilganda videolarni to'g'ridan-to'g'ri yuborish
 @bot.message_handler(func=lambda message: True)
-def get_movie(message):
+def handle_messages(message):
     user_id = message.from_user.id
-    
+    name = message.from_user.first_name
+    text = message.text
+
     if not check_all_subscriptions(user_id):
-        bot.send_message(message.chat.id, "Iltimos, avval ko'rsatilgan **ikkala kanalga** ham obuna bo'ling va /start buyrug'ini bosing.")
+        bot.send_message(message.chat.id, "Iltimos, avval ko'rsatilgan 3 ta guruhga qo'shilish so'rovini yuboring va /start buyrug'ini bosing.")
         return
 
-    code = message.text.strip()
-    
-    if code in MOVIES:
-        bot.send_message(message.chat.id, "Mana siz so'ragan multfilmning 11 ta qismi:")
-        for msg_id in MOVIES[code]:
-            try:
-                # Videolarni yopiq kanaldan to'g'ridan-to'g'ri foydalanuvchiga nusxalab yuborish
-                bot.copy_message(chat_id=message.chat.id, from_chat_id=PRIVATE_CHANNEL_ID, message_id=msg_id)
-            except Exception as e:
-                print(f"Xatolik: {e}")
+    if text == "🔍 Kino kodlarini qidirish":
+        bot.send_message(message.chat.id, "Kino kodini yuboring:")
+    elif text == "💎 Premium":
+        bot.send_message(message.chat.id, "💎 Premium bo'limi tez orada ishga tushadi!")
+    elif text == "🎲 Tasodifiy kino":
+        bot.send_message(message.chat.id, "🎲 Hozircha tasodifiy kinolar mavjud emas.")
+    elif text == "🏆 Top kinolar":
+        bot.send_message(message.chat.id, "🏆 Top kinolar ro'yxati bo'sh.")
+    elif text == "👤 Profil":
+        bot.send_message(message.chat.id, f"👤 Ismingiz: {name}\n🆔 ID raqamingiz: `{user_id}`", parse_mode="Markdown")
     else:
-        bot.send_message(message.chat.id, "Bunday raqamdagi kino topilmadi. To'g'ri kodni yuboring (Masalan: **6**).")
+        code = text.strip()
+        if code in MOVIES:
+            bot.send_message(message.chat.id, "Mana kino qismlari:")
+            for msg_id in MOVIES[code]:
+                try:
+                    bot.copy_message(chat_id=message.chat.id, from_chat_id=PRIVATE_CHANNEL_ID, message_id=msg_id)
+                except Exception as e:
+                    print(f"Xatolik: {e}")
+        else:
+            bot.send_message(message.chat.id, "Bunday raqamdagi kino topilmadi. To'g'ri kino kodini yuboring.")
 
 print("Kino boti ishga tushdi...")
 bot.infinity_polling()
